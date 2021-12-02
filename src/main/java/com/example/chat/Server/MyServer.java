@@ -51,6 +51,11 @@ private AuthService authService;
             client.sendMsg(msg);
         }
     }
+    public synchronized void broadcastClients() {
+        for (ClientHandler client : clients) {
+            client.getClients();
+        }
+    }
 
     public synchronized void fromToMsg (ClientHandler from, String to, String message) {
         for (ClientHandler client : clients) {
@@ -65,10 +70,19 @@ private AuthService authService;
 
     public synchronized void unsubscribe (ClientHandler client){
         clients.remove(client);
+        broadcastClients();
     }
 
     public synchronized void subscribe (ClientHandler client){
         clients.add(client);
-
+        broadcastClients();
     }
-}
+
+    public synchronized List<String> getNicks() {
+            List<String> nickList = new ArrayList<>();
+            for (ClientHandler c : clients){
+                nickList.add(c.getName());
+            }
+            return nickList;
+        }
+    }
