@@ -5,6 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.sql.SQLException;
 import java.util.List;
 
 public class ClientHandler {
@@ -66,7 +67,8 @@ public class ClientHandler {
                         sendMsg("Неверное сообщение авторизации");
                         continue;
                     }
-                    String nick = myServer.getAuthService().getNickByLoginPass(parts[1], parts[2]);
+
+                    String nick = myServer.getAuthService().getNickByLoginPass(parts[1], parts[2], in, out);
                     if (nick != null) {
                         if (myServer.isNickAvailable(nick)) {
                             isAuthorized = true;
@@ -85,7 +87,7 @@ public class ClientHandler {
                     sendMsg("Неверное сообщение авторизации");
                 }
             }
-        } catch (SocketException e) {
+        } catch (SocketException | SQLException e) {
             System.out.println("Аутентификация не пройдена\n" + e);
         }
     }
@@ -110,6 +112,16 @@ public class ClientHandler {
                         getClients();
                         continue;
                     }
+                    if (strFromClient.startsWith("/rename ")){
+                        String newName = strFromClient.substring("/rename ".length());
+                        if (myServer.getAuthService().renameUser(newName, this.name)) {
+                            System.out.println(this.name);
+                            this.name = newName;
+                            System.out.println(this.name);
+                            myServer.broadcastClients();
+                        };
+                        continue;
+                    }
                     continue;
                 }
                 myServer.broadcastMsg(name + " пишет: " + strFromClient);
@@ -121,6 +133,8 @@ public class ClientHandler {
             } else {
                 System.out.println("Соединение с " + this.socket + " прервано\n" + e);
             }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         } finally {
             myServer.unsubscribe(this);
         }

@@ -68,6 +68,11 @@ private AuthService authService;
         from.sendMsg("Такой пользователь не найден.\n");
     }
 
+    public synchronized void changeSub (ClientHandler client) {
+        clients.remove(client);
+        clients.add(client);
+        broadcastClients();
+    }
     public synchronized void unsubscribe (ClientHandler client){
         clients.remove(client);
         broadcastClients();
@@ -82,6 +87,7 @@ private AuthService authService;
             List<String> nickList = new ArrayList<>();
             for (ClientHandler c : clients){
                 nickList.add(c.getName());
+                System.out.println(c.getName());
             }
             return nickList;
         }
