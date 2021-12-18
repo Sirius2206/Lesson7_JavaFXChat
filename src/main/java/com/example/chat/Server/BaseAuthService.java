@@ -4,30 +4,13 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+
 
 public class BaseAuthService implements AuthService {
     private static Connection connection;
     private static Statement stmt;
 
-    private class Entry {
-        private String login;
-        private String pass;
-        private String nick;
-
-
-
-        public Entry(String login, String pass, String nick) {
-            this.login = login;
-            this.pass = pass;
-            this.nick = nick;
-        }
-    }
-
-    private List<Entry> entries;
-
-    public static void connect() throws SQLException {
+    public static void connect(){
     }
 
     public static void disconnect() {
@@ -59,14 +42,6 @@ public class BaseAuthService implements AuthService {
     public void stop() {
         System.out.println("Сервис аутентификации остановлен");
 
-    }
-
-    public BaseAuthService() {
-        entries = new ArrayList<>();
-        entries.add(new Entry("login1", "pass1", "nick1"));
-        entries.add(new Entry("login2", "pass2", "nick2"));
-        entries.add(new Entry("login3", "pass3", "nick3"));
-        entries.add(new Entry("login4", "pass4", "nick4"));
     }
 
 
@@ -102,7 +77,7 @@ public class BaseAuthService implements AuthService {
         return null;
     }
 
-    public boolean renameUser(String to, String from) throws SQLException {
+    public boolean renameUser(String to, String from){
         try {
             stmt.executeUpdate("UPDATE Accounts SET Nickname = '" + to + "' WHERE Nickname = '" + from + "';");
             return true;

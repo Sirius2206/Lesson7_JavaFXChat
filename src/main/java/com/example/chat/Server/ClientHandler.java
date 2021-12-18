@@ -56,7 +56,6 @@ public class ClientHandler {
                 }
                 if (!isAuthorized) {
                     closeConnection();
-                    return;
                 }
             }).start();
             while (true) {
@@ -72,7 +71,7 @@ public class ClientHandler {
                     if (nick != null) {
                         if (myServer.isNickAvailable(nick)) {
                             isAuthorized = true;
-                            sendMsg("/authok " + nick);
+                            sendMsg("/authok " + parts[1] + " " + nick);
                             name = nick;
                             myServer.broadcastMsg(name + " зашел в чат.");
                             myServer.subscribe(this);
@@ -119,7 +118,7 @@ public class ClientHandler {
                             this.name = newName;
                             System.out.println(this.name);
                             myServer.broadcastClients();
-                        };
+                        }
                         continue;
                     }
                     continue;
@@ -133,8 +132,8 @@ public class ClientHandler {
             } else {
                 System.out.println("Соединение с " + this.socket + " прервано\n" + e);
             }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException throwable) {
+            throwable.printStackTrace();
         } finally {
             myServer.unsubscribe(this);
         }
