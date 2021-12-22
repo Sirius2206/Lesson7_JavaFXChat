@@ -7,12 +7,15 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ClientHandler {
-    private MyServer myServer;
-    private Socket socket;
-    private DataInputStream in;
-    private DataOutputStream out;
+    private final MyServer myServer;
+    private final Socket socket;
+    private final DataInputStream in;
+    private final DataOutputStream out;
+    private final static ExecutorService clientsPool = Executors.newCachedThreadPool();
 
     private String name;
     private boolean isAuthorized;
@@ -30,7 +33,8 @@ public class ClientHandler {
             this.name = "Неизвестный пользователь";
             this.isAuthorized = false;
 
-            new Thread(() -> {
+
+            clientsPool.execute(() ->{
                 try {
                     authentication();
                     readMessages();
@@ -39,7 +43,8 @@ public class ClientHandler {
                 } finally {
                     closeConnection();
                 }
-            }).start();
+            });
+            clientsPool.shutdown();
         }catch (IOException e) {
             throw new RuntimeException("Проблемы при создании обработчика клиента");
         }
