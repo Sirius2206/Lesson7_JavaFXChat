@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<VBox alignment="CENTER" spacing="0.0" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.example.chat.ClientChatController" minHeight="240" minWidth="320">
+    <HBox VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS" >
+        <TextArea fx:id="chatArea" editable="false" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS"/>
+        <TextArea fx:id="clientsArea" editable="false" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS" minWidth="150" maxWidth="150"/>
+    </HBox>
+    <HBox alignment="BOTTOM_CENTER">
+        <TextField fx:id="userInput" onAction="#onSendButtonClick" promptText="Начните печатать здесь" prefWidth="240" HBox.hgrow="ALWAYS"/>
+        <Button text="Send" onAction="#onSendButtonClick" prefWidth="80"/>
+    </HBox>
+
+</VBox>
