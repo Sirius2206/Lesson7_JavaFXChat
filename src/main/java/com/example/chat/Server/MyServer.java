@@ -5,12 +5,14 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class MyServer {
-private final int PORT = 8189;
+    private final int PORT = 8189;
+    static Logger LOG = Logger.getLogger(MyServer.class.getName());
 
-private List<ClientHandler> clients;
-private AuthService authService;
+    private List<ClientHandler> clients;
+    private AuthService authService;
 
     public AuthService getAuthService() {
         return authService;
@@ -23,12 +25,13 @@ private AuthService authService;
             authService.start();
             clients = new ArrayList<>();
             while (true) {
-                System.out.println("Сервер ожидает подключения");
+                LOG.info("Сервер ожидает подключения");
                 Socket socket = server.accept();
-                System.out.println("Клиент подключился");
+                LOG.info("Клиент подключился");
                 new ClientHandler(this, socket);
             }
         }catch (IOException e) {
+            LOG.warning("Произошла ошибка при подключении клиента.");
             e.printStackTrace();
         } finally {
             if (authService != null) {
@@ -68,11 +71,7 @@ private AuthService authService;
         from.sendMsg("Такой пользователь не найден.\n");
     }
 
-    public synchronized void changeSub (ClientHandler client) {
-        clients.remove(client);
-        clients.add(client);
-        broadcastClients();
-    }
+
     public synchronized void unsubscribe (ClientHandler client){
         clients.remove(client);
         broadcastClients();
@@ -84,11 +83,11 @@ private AuthService authService;
     }
 
     public synchronized List<String> getNicks() {
-            List<String> nickList = new ArrayList<>();
-            for (ClientHandler c : clients){
-                nickList.add(c.getName());
-                System.out.println(c.getName());
-            }
-            return nickList;
+        List<String> nickList = new ArrayList<>();
+        for (ClientHandler c : clients){
+            nickList.add(c.getName());
+            System.out.println(c.getName());
         }
+        return nickList;
     }
+}

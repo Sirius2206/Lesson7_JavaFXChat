@@ -9,13 +9,14 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Logger;
 
 public class ClientHandler {
     private final MyServer myServer;
     private final Socket socket;
     private final DataInputStream in;
     private final DataOutputStream out;
-    private final static ExecutorService clientsPool = Executors.newCachedThreadPool();
+    static Logger LOG = Logger.getLogger(ClientHandler.class.getName());
 
     private String name;
     private boolean isAuthorized;
@@ -33,8 +34,8 @@ public class ClientHandler {
             this.name = "Неизвестный пользователь";
             this.isAuthorized = false;
 
-
-            clientsPool.execute(() ->{
+            ExecutorService executorService = Executors.newCachedThreadPool();
+            executorService.execute(() ->{
                 try {
                     authentication();
                     readMessages();
@@ -44,8 +45,9 @@ public class ClientHandler {
                     closeConnection();
                 }
             });
-            clientsPool.shutdown();
+            executorService.shutdown();
         }catch (IOException e) {
+            LOG.warning("Проблемы при создании обработчика клиента");
             throw new RuntimeException("Проблемы при создании обработчика клиента");
         }
     }
@@ -54,20 +56,24 @@ public class ClientHandler {
         try {
             new Thread(() -> {
                 try {
-                    System.out.println("ожидаем");
+                    LOG.info("Запушен процесс авторизации: " + socket);
                     Thread.sleep(120000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
                 if (!isAuthorized) {
+                    LOG.warning("Пользователь не авторизовался за 2 минуты: " + socket);
                     closeConnection();
+                    LOG.warning("Соединение с " + socket + "закрыто");
                 }
             }).start();
             while (true) {
                 String str = in.readUTF();
                 if (str.startsWith("/auth")) {
+                    LOG.info("Происходит попытка авторизации: " + socket);
                     String[] parts = str.split("\\s");
                     if (parts.length != 3){
+                        LOG.info("Неверное сообщение авторизации " + socket);
                         sendMsg("Неверное сообщение авторизации");
                         continue;
                     }
@@ -76,22 +82,29 @@ public class ClientHandler {
                     if (nick != null) {
                         if (myServer.isNickAvailable(nick)) {
                             isAuthorized = true;
-                            sendMsg("/authok " + parts[1] + " " + nick);
+                            sendMsg("/authok " + nick);
                             name = nick;
                             myServer.broadcastMsg(name + " зашел в чат.");
                             myServer.subscribe(this);
                             return;
                         } else {
+                            LOG.warning("Пользователь с таким ником(" + nick + ") уже есть: " + socket);
                             sendMsg("Произошла ошибка при авторизации.");
                         }
                     } else {
+                        LOG.warning("Никнейм вернулся со значением null: " + socket);
                         sendMsg("Произошла ошибка при авторизации.");
                     }
                 } else {
+                    LOG.info("Неверное сообщение авторизации " + socket);
                     sendMsg("Неверное сообщение авторизации");
                 }
             }
-        } catch (SocketException | SQLException e) {
+        } catch (SocketException e) {
+            LOG.warning("Произошла ошибка на стороне пользователя: " + socket + ". Аутентификация не пройдена");
+            System.out.println("Аутентификация не пройдена\n" + e);
+        } catch (SQLException e) {
+            LOG.warning("Произошла ошибка при обработке SQL-запроса: " + socket + ". Аутентификация не пройдена");
             System.out.println("Аутентификация не пройдена\n" + e);
         }
     }
@@ -102,6 +115,7 @@ public class ClientHandler {
                 String strFromClient = in.readUTF();
                 if (strFromClient.startsWith("/")) {
                     if (strFromClient.equals("/end")) {
+                        LOG.info("Пользователь " + this.name + "ввел /end. Пользователь отключается.");
                         closeConnection();
                         return;
                     }
@@ -117,6 +131,7 @@ public class ClientHandler {
                         continue;
                     }
                     if (strFromClient.startsWith("/rename ")){
+                        LOG.info("Пользователь" + this.name + " запустил процесс смены ника.");
                         String newName = strFromClient.substring("/rename ".length());
                         if (myServer.getAuthService().renameUser(newName, this.name)) {
                             System.out.println(this.name);
@@ -132,13 +147,14 @@ public class ClientHandler {
             }
         } catch (SocketException e){
             if (isAuthorized){
-                System.out.println("Соединение с " + this.socket + " прервано клиентом.");
+                LOG.warning("Соединение с " + this.socket + " прервано клиентом.");
 
             } else {
-                System.out.println("Соединение с " + this.socket + " прервано\n" + e);
+                LOG.warning("Соединение с " + this.socket + " прервано.");
             }
-        } catch (SQLException throwable) {
-            throwable.printStackTrace();
+        } catch (SQLException throwables) {
+            LOG.warning("Произошла ошибка при обработке SQL-запроса.");
+            throwables.printStackTrace();
         } finally {
             myServer.unsubscribe(this);
         }
@@ -149,7 +165,7 @@ public class ClientHandler {
         try {
             out.writeUTF (msg);
         } catch (IOException e) {
-            System.out.println("sendMsg exception");
+            LOG.warning("sendMsg exception");
             e.printStackTrace();
         }
     }
@@ -159,13 +175,15 @@ public class ClientHandler {
             myServer.unsubscribe(this);
             myServer.broadcastClients();
             myServer.broadcastMsg(name + " выходит из чата.");
+            LOG.info("Успешно вышел из чата " + name);
         }
         try {
             in.close();
             out.close();
             socket.close();
+            LOG.info("Успешно закрыто соединение с " + name);
         } catch (IOException e) {
-            System.out.println("closeConnection exception");
+            LOG.warning("closeConnection exception");
             e.printStackTrace();
         }
     }

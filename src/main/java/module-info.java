@@ -6,4 +6,5 @@ module com.example.chat {
 
     opens com.example.chat to javafx.fxml;
     exports com.example.chat;
+    exports Lesson6_LogTest;
 }
